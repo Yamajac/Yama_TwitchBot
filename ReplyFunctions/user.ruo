@@ -1,0 +1,13 @@
+load "ReplyFunctions";
+
+static user :: ReplyFunctions +> {
+	# ReplyFunctions.children push ["tag", name_of_class];
+	ReplyFunctions.children push ["user", user]; 
+	
+	# Return an array of tags and replacement strings, 
+	# or throw an error with error code and message.
+	foundTag(bot, message, cmd) => r from {
+		splitMessage := ReplyFunctions.splitMessage(message, "#", 1);
+		r = [["{user}", mov splitMessage[0]]];
+	};
+};

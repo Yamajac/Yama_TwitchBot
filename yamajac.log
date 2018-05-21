@@ -1,3 +1,6 @@
+Error: Cannot iterate over non-iterable value!
+	(pair in replacements) ->> { [ ((pos in (Strings . findAll)( r (pair[ 0 ]) )) ->> { [ (r = ((( .. (str (r[ (0 : pos) ]))) .. (pair[ 1 ])) .. (str (r[ ((pos + (len (pair[ 0 ]))) : ((len r) - 1)) ])))) ] }) ] }
+	File: IRCBOT.ruo
 Error: index out of bounds!
 	splitMessage[ 2 ]
 	File: IRCBOT.ruo
