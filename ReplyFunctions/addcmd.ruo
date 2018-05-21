@@ -28,14 +28,15 @@ static addcmd :: ReplyFunctions +> {
 		};
 	};
 	
+	# Return a string 
 	handleError(bot, message, cmd, err) => r from {
 		# print(str err[0:26]);
 		str err[0:9] == "ERROR 001" then {
 			r = "That command already exists";
-		} else str err[0:26] == "Error: index out of bounds" {
+		} else str err[0:26] == "Error: index out of bounds" then {
 			r = "Invalid syntax: " .. cmd[C.cmd] .. " <cmd> <reply>"
 		} else {
-			r = ReplyFunctions.handleError(bot, message, reply, err);
+			r = ReplyFunctions.handleError(bot, message, cmd, err);
 		};
 	};
 	
