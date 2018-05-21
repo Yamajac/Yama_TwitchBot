@@ -1,0 +1,33 @@
+load "Strings";
+load "Map";
+
+static Yamon :: {
+	
+	decode(file) => o from {
+		o  = new Map;
+		f := new File(file,'r');
+		o["nick"]    = Strings.split(f.readLine(),':',1)[1];
+		o["pass"]    = Strings.split(f.readLine(),':',1)[1];
+		o["channel"] = Strings.split(f.readLine(),':',1)[1];
+		
+		var line;
+		commands := [];
+		(line = f.readLine()) != null do {
+			commands push Strings.split(line,' ',1);
+		};
+		
+		o["commands"] = commands;
+		f.close();
+	};
+	
+	encode(o) => s from {
+		s = "";
+		s = s .. "Nick:" .. o["nick"] .. "\n";
+		s = s .. "Pass:" .. o["pass"] .. "\n";
+		s = s .. "Channel:" .. o["channel"] .. "\n";
+		
+		cmd in o["commands"] ->> {
+			s = s .. Strings.join(cmd, ' ') .. "\n";
+		};
+	};
+}; 

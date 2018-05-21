@@ -1,0 +1,34 @@
+load "ReplyFunctions";
+load "../structs";
+
+static delcmd :: ReplyFunctions +> {
+	# ReplyFunctions.children push ["tag", name_of_class];
+	ReplyFunctions.children push ["delcmd", delcmd]; 
+	
+	lastAddCmd(profile, cmd) => r from {		
+		addcmds := [];
+		c in profile["commands"] ->> {
+			Strings.find(c[C.reply], "{addcmd}") != -1 then addcmds push c[C.cmd];
+		};
+		
+		len addcmds > 1 || cmd != addcmds[0] then {
+			r = false;
+			return;
+		};
+		r=true;
+	};
+	
+	# Return an array of tags and replacement strings, 
+	# or throw an error with error code and message.
+	foundTag(bot, message, cmd) => r from {
+	
+		splitMessage := ReplyFunctions.splitMessage(message, cmd[C.cmd], 2);
+		lastAddCmd(bot.profile, splitMessage[1]) == true then {
+			throw("ERROR 002: COMMAND LAST {addcmd} CAPABLE COMMAND \n        " .. splitMessage[1]);
+		} else {
+			bot.removeCommand(splitMessage[1]);
+			r = [["{delcmd}", splitMessage[1]]];
+		};
+	};
+	
+};

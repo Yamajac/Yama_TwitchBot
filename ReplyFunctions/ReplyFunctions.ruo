@@ -1,0 +1,53 @@
+load "../Structs";
+
+static ReplyFunctions :: {
+	local children := [];
+	
+	local splitMessage(message, pat, splits) => r from {
+		r = Strings.split(message[Strings.find(message, pat):len message], ' ', splits);
+	};
+	
+	local parseReply(bot, message, cmd) => r from {
+		r = cmd[C.reply];
+		child in children ->> {
+			pos := Strings.find(r, "{" .. child[0]);
+			pos != -1 then {
+				try {
+					replacements := child[1].foundTag(bot, message, cmd);
+					pair in replacements ->> {
+						pos in Strings.findAll(r, pair[0]) ->> {
+							r = "" .. str r[0:pos] .. pair[1] .. str r[pos+len pair[0]:len r-1];
+						};
+					};
+				} catch {
+					r = child[1].handleError(bot, message, cmd, _err);
+				};
+				return;
+			};
+		};
+	};
+	
+	foundTag(bot, message, cmd) => r from {
+		
+	};
+	
+	handleError(bot, message, cmd, err) => r from {
+		try {
+		r = "Unhandled exception, please check error logs.";
+		log := err .. '\n';
+		var f;
+		System.exists(bot.profile["name"] .. ".log") then {
+			f = new File(bot.profile["name"] .. ".log", 'r');
+			log = log .. f.readAll();
+			f.close();
+		};	
+		
+		f = new File(bot.profile["name"] .. ".log", 'w');
+		f.write(log);
+		f.close();
+		printl(err);
+		} catch {
+			print(_err);
+		};
+	};
+};

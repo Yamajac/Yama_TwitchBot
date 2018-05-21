@@ -1,0 +1,143 @@
+load "Strings";
+load "Map";
+load "Yamon";
+load "structs";
+load "ReplyFunctions\*";
+
+Winsock.start();
+
+dynamic Bot :: {
+	var (nick, pass, channel, s, buffer, commands);
+	
+	init(profile) => {
+		self.profile  = profile;
+		
+		self.s = Winsock.createSocket();
+		self.s.connect(self.getAddress(), 6667);
+		
+		self.signInTwitch();
+		self.s.listen(handle_data, 1024);
+		
+		self.Main();
+	};
+	
+	send(message, chat) => {
+		chat == null then {
+			printl("PRIVMSG #" .. self.profile["channel"] .. " :" .. message);
+			self.s.send("PRIVMSG #" .. self.profile["channel"] .. " :" .. message .. "\r\n");
+		} else {
+			self.s.send(message .. "\r\n");
+		}
+	};
+	
+	getAddress() => Address from {
+		Address = Winsock.getAddresses("irc.chat.twitch.tv")[0]
+	};
+	
+	signInTwitch() => {
+		self.send("PASS "  .. self.profile["pass"], true);
+		self.send("NICK "  .. self.profile["nick"], true);
+		self.send("JOIN #" .. self.profile["channel"], true);
+	};
+	
+	
+	Main() => {
+		true do {
+	
+		};
+	};
+	
+	saveProfile() => {
+		f := new File(AppData .. "\Ruota\Yama_IRC\\" .. self.profile["name"].. ".yamon",'w');
+		f.write(Yamon.encode(profile));
+		f.close()
+	};
+	
+	addCommand(cmd, reply) => {
+		self.profile["commands"] = self.profile["commands"] ++ [[cmd,reply]];
+		self.saveProfile();
+	};
+	
+	removeCommand(cmd) => {
+		pos in [0 : len self.profile["commands"]] ->> {
+			self.profile["commands"][pos][C.cmd] == cmd then {
+				self.profile["commands"] = self.profile["commands"][0:pos, (pos+1):len self.profile["commands"]];
+				self.saveProfile();
+				return;
+			};
+		};
+	};
+	
+	handle_data(data) => {
+		Lines := Strings.split(data, '\r\n');
+		
+		i in Lines ->> {
+			Line := Regex.search(i, "tmi\.twitch\.tv");
+			len Line > 0 then {
+				self.handle_message(Strings.remove(i, '\n'));
+			};
+		};	
+	};	
+	
+	handle_message(message) => {
+		printl(message);
+		
+		message == "PING :tmi.twitch.tv" then self.send("PONG :tmi.twitch.tv", true);
+		(pos, lowest_pos, first_cmd) := [-1, -1, null];
+		cmd in self.profile["commands"] ->> {
+			pos = Strings.find(message, cmd[C.cmd]);
+			pos != -1 then {
+				pos < lowest_pos || lowest_pos == -1 then {
+					lowest_pos = pos;
+					first_cmd = cmd;
+				};
+			};
+		};
+		
+		lowest_pos != -1 then {
+			reply := ReplyFunctions.parseReply(self, message, first_cmd);
+			self.send(reply);
+			return;
+		};
+	};
+};
+
+AppData := os.getenv("appdata");
+System.mkdir(AppData .. "\Ruota");
+System.mkdir(AppData .. "\Ruota\Yama_IRC");
+var profile;
+
+profileName := Input.prompt("Enter profile name: ");
+try {
+	profile = Yamon.decode(AppData .. "\Ruota\Yama_IRC\\" .. profileName .. ".yamon");
+	profile["name"] = profileName;
+} catch {
+	r := Input.prompt("Create new profile? (Y/n)");
+	r == "n" then {
+		os.exit();
+	};
+	
+	name    := Input.prompt("Please enter a profile name: ");
+	nick    := Input.prompt("Please enter your account's username: ");
+	pass    := Input.prompt("Please enter your account's OAuth code: ");
+	channel := Input.prompt("Please enter the channel the bot will run in: ");
+	profile            = new Map;
+	profile["name"]    = name;
+	profile["nick"]    = nick;
+	profile["pass"]    = pass;
+	profile["channel"] = channel;
+
+	commands := [["!ac", "The command {addcmd} has been added."],
+				 ["!dc", "The command {delcmd} has been removed."]];
+	profile["commands"] = commands;
+	encodedProfile := Yamon.encode(profile);
+	print(encodedProfile);
+	
+	f := new File(AppData .. "\Ruota\Yama_IRC\\" .. name .. ".yamon",'w');
+	f.write(encodedProfile);
+	f.close();
+	
+};
+
+
+MyGoodOlBottyBoy := new Bot(profile);
