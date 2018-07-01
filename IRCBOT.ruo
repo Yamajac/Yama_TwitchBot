@@ -4,15 +4,15 @@ load "Yamon";
 load "structs";
 load "ReplyFunctions\*";
 
-Winsock.start();
-
 dynamic Bot :: {
-	var (nick, pass, channel, s, buffer, commands);
+	var (nick, pass, channel, s, buffer, commands, ios);
 	
 	init(profile) => {
+		ios = new IOService();
+
 		self.profile  = profile;
 		
-		self.s = Winsock.createSocket();
+		self.s = new Socket(ios);
 		self.s.connect(self.getAddress(), 6667);
 		
 		self.signInTwitch();
@@ -31,7 +31,7 @@ dynamic Bot :: {
 	};
 	
 	getAddress() => Address from {
-		Address = Winsock.getAddresses("irc.chat.twitch.tv")[0]
+		Address = Network.getAddresses("irc.chat.twitch.tv")[0]
 	};
 	
 	signInTwitch() => {
